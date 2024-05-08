@@ -1,0 +1,47 @@
+name: Trigger auto deployment for cappab
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/cappab-AutoDeployTrigger-6239e6e0-46ff-4c38-bd51-3c6be46d82e6.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.CAPPAB_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.CAPPAB_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.CAPPAB_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }} 
+          registryUrl: 
+          registryUsername: ${{ secrets.CAPPAB_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.CAPPAB_REGISTRY_PASSWORD }}
+          containerAppName: cappab
+          resourceGroup: 2309070030004376ashtobedeleted
+          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
